@@ -1,0 +1,77 @@
+#pragma config(Sensor, dgtl9,  rightEncoder,        sensorQuadEncoder)
+#pragma config(Sensor, dgtl11,  leftEncoder,         sensorQuadEncoder)
+
+//port2 motor goes to 9/10
+//port3 motor goes to 11/12
+int motor1 = 0;
+int motor2 = 0;
+const int speed = 120;
+const int speedOffset = 5;
+
+task main()
+{
+
+	clearTimer(T1);
+	while (time1[T1] < 2000)
+	{
+		motor[port2] = speed;
+		motor[port3] = speed;
+	}
+	motor[port2] = 0;
+	motor[port3] = 0;
+	SensorValue[rightEncoder] = 0;	  // Set the encoder so that it starts counting at 0
+	SensorValue[leftEncoder]  = 0;	  // Set the encoder so that it starts counting at 0
+	setBaudRate(uartOne, baudRate9600);
+	while (true){
+		int rcvChar = getChar(uartOne);
+		if (rcvChar == -1)
+		{
+		}
+		else if (rcvChar == '0')
+		{
+			motor1 = 0;
+			motor2 = 0;
+		}
+		else if (rcvChar == '1' || rcvChar == '2')
+		{
+			if(SensorValue[rightEncoder] == SensorValue[leftEncoder]) // If rightEncoder has counted the same amount as leftEncoder:
+			{
+				// Move Forward
+				motor1 = speed;		    // Right Motor is run at power level 80
+				motor2  = speed;		    // Left Motor is run at power level 80
+			}
+			else if(SensorValue[rightEncoder] > SensorValue[leftEncoder])	// If rightEncoder has counted more encoder counts
+			{
+				// Turn slightly right
+				motor2 = speed - speedOffset;		    // Right Motor is run at power level 60
+				motor1  = speed;		    // Left Motor is run at power level 80
+			}
+			else	// Only runs if leftEncoder has counted more encoder counts
+			{
+				// Turn slightly left
+				motor2 = speed;		    // Right Motor is run at power level 80
+				motor1  = speed - speedOffset;		    // Left Motor is run at power level 60
+			}
+			if (rcvChar == '1')
+			{
+				motor1 = -motor1;
+			}
+			else
+			{
+				motor2 = -motor2;
+			}
+		}
+		else if (rcvChar == '3')
+		{
+			motor1 = speed;
+			motor2 = speed;
+		}
+		else if (rcvChar == '4')
+		{
+			motor1 = -speed;
+			motor2 = -speed;
+		}
+		motor[port2] = motor1;
+		motor[port3] = motor2;
+	}
+}
